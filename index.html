@@ -546,6 +546,7 @@ async function generarTickets() {
     if (!data.success) { alert('Error generando tickets: ' + (data.error || 'desconocido')); return; }
     ticketsGenerados = data.codigos.map(codigo => ({ codigo, empresa: nombreEmpresa, comedor, servicio: serviciosPermitidos.join(' / '), vigencia: vigenciaHasta }));
     mostrarVistaPreviaVenta();
+    limpiarFormularioVenta();
   } catch (err) { alert('No se pudo conectar con el backend.'); console.error(err); }
 }
 
@@ -570,6 +571,15 @@ function mostrarVistaPreviaVenta() {
     });
   }
   ticketsGenerados.forEach(t => new QRCode(document.querySelector('.qr-' + t.codigo), { text: t.codigo, width: 80, height: 80 }));
+}
+
+function limpiarFormularioVenta() {
+  document.getElementById('buscarEmpresa').value = '';
+  document.getElementById('idProveedorAuto').value = '';
+  document.getElementById('cantidad').value = 12;
+  document.getElementById('vigenciaDesde').value = '';
+  document.getElementById('vigenciaHasta').value = '';
+  document.querySelectorAll('#tabVenta .servicios input').forEach(i => i.checked = true);
 }
 
 function imprimir() { window.print(); }
@@ -735,6 +745,7 @@ async function invalidarPorEmpresa() {
     const resp = await fetch(URL_BACKEND + '?action=invalidarTickets', { method: 'POST', body: JSON.stringify({ empresa, comedor: getComedorTrabajo(), quien: usuarioActual.nombre }) });
     const data = await resp.json();
     document.getElementById('resultadoInvalidarEmpresa').innerHTML = `<p class="exito">${data.total} ticket(s) invalidado(s) para ${empresa}.</p>`;
+    document.getElementById('empresaInvalidar').value = '';
   } catch (err) { alert('No se pudo invalidar.'); console.error(err); }
 }
 
