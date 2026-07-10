@@ -10,16 +10,18 @@
   :root { --azul-oscuro: #1F3864; --azul-medio: #2E4B7B; }
   * { box-sizing: border-box; }
   body { font-family: Calibri, Arial, sans-serif; background: #f2f4f7; margin: 0; padding: 20px; color: #1a1a1a; }
-  .contenedor { max-width: 820px; margin: 0 auto; }
+  .contenedor { max-width: 860px; margin: 0 auto; }
   h1 { color: var(--azul-oscuro); font-size: 20px; margin: 0 0 4px; }
   h2.seccion { font-size: 15px; color: var(--azul-oscuro); margin: 0 0 8px; }
   .subtitulo { color: #555; font-size: 13px; margin-bottom: 20px; }
-  .logo-wrap { text-align: center; margin-bottom: 12px; }
-  .logo-wrap img { max-width: 160px; max-height: 60px; object-fit: contain; }
+  .logo-wrap { text-align: center; margin-bottom: 4px; }
+  .logo-wrap img { max-width: 150px; max-height: 55px; object-fit: contain; }
+  .reloj { text-align: center; font-size: 12px; color: #777; margin-bottom: 14px; }
   .tarjeta { background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
   label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; color: #333; }
   input, select { width: 100%; padding: 9px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
   input[readonly] { background: #f0f2f5; color: #555; }
+  textarea { width: 100%; padding: 9px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; font-family: inherit; }
   .fila { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .servicios { display: flex; gap: 16px; margin-top: 6px; }
   .servicios label { display: flex; align-items: center; gap: 6px; font-weight: 400; margin: 0; }
@@ -28,9 +30,11 @@
   button:hover { background: var(--azul-medio); }
   button.secundario { background: #fff; color: var(--azul-oscuro); border: 1px solid var(--azul-oscuro); }
   button.detener { background: #a32d2d; }
+  button.chico { padding: 6px 12px; font-size: 12px; margin: 0; }
   button:disabled { opacity: 0.5; cursor: not-allowed; }
   .error { font-size: 13px; color: #a32d2d; background: #fcebeb; border: 1px solid #f09595; border-radius: 6px; padding: 10px 14px; margin-top: 10px; }
   .aviso { font-size: 13px; color: #8a6d00; background: #fff8e1; border: 1px solid #ffe082; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; }
+  .exito { font-size: 13px; color: #0f6e56; background: #eaf3de; border: 1px solid #b7d99a; border-radius: 6px; padding: 10px 14px; margin-top: 10px; }
   .oculto { display: none !important; }
   .separador { border-top: 1px dashed #ccc; margin: 20px 0 10px; padding-top: 14px; }
   .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
@@ -47,6 +51,7 @@
   table.tickets th, table.tickets td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #eee; }
   .estado-vigente { color: #0f6e56; font-weight: 600; }
   .estado-usado { color: #888; }
+  .estado-invalidado { color: #a32d2d; }
   .estado-aprobado { color: #0f6e56; font-weight: 600; }
   .estado-rechazado { color: #888; }
   .estado-alerta_duplicado { color: #a36a00; font-weight: 600; }
@@ -58,6 +63,12 @@
   .tabla-scroll { max-height: 300px; overflow-y: auto; }
   .accesos-rapidos { display: flex; gap: 10px; margin-top: 10px; }
   .accesos-rapidos button { margin-top: 0; }
+
+  .filtro-fecha { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .filtro-fecha button { margin: 0; padding: 7px 14px; font-size: 12px; background: #fff; color: var(--azul-oscuro); border: 1px solid #d8dce3; }
+  .filtro-fecha button.activo { background: var(--azul-oscuro); color: #fff; }
+  .rango-fechas { display: flex; gap: 8px; align-items: center; }
+  .rango-fechas input { width: auto; }
 
   #lector { width: 100%; max-width: 380px; margin: 0 auto; border-radius: 8px; overflow: hidden; }
   .resultado-grande { border-radius: 10px; padding: 24px 16px; text-align: center; margin-top: 14px; }
@@ -94,6 +105,7 @@
 
 <div class="no-print">
   <div class="contenedor logo-wrap"><img id="logoGrumasa" src="" alt="Grupo Martinón" onerror="this.style.display='none'"></div>
+  <div class="contenedor reloj" id="relojActual"></div>
 
   <!-- LOGIN -->
   <div id="vistaLogin" class="tarjeta contenedor" style="max-width:420px">
@@ -134,7 +146,7 @@
         <h2 class="seccion">Vender tickets</h2>
         <div class="fila">
           <div><label>Comedor</label><input type="text" id="ventaComedor" readonly></div>
-          <div><label>Hotel de esta caja</label><input type="text" id="ventaHotel" readonly></div>
+          <div><label>Hotel</label><select id="ventaHotelSelect"></select></div>
         </div>
         <div class="separador">
           <label>Empresa proveedora</label>
@@ -158,7 +170,7 @@
         </div>
         <button onclick="generarTickets()">Generar tickets</button>
         <div id="resultadoVenta"></div>
-        <div class="config" style="font-size:12px;color:#888;margin-top:16px">Hoja carta: 12 tickets por página (3x4).</div>
+        <div style="font-size:12px;color:#888;margin-top:16px">Hoja carta: 12 tickets por página (3x4).</div>
       </div>
     </div>
 
@@ -170,10 +182,10 @@
           <div><label>Nombre de la empresa</label><input type="text" id="nuevoNombreEmpresa" placeholder="Ej. Transportes del Caribe"></div>
           <div><label>Contacto</label><input type="text" id="nuevoContacto" placeholder="Nombre y teléfono"></div>
         </div>
-        <label>Email para alertas</label>
+        <label>Email para alertas y acceso al portal</label>
         <input type="text" id="nuevoEmail" placeholder="correo@empresa.com">
         <button class="secundario" onclick="crearProveedor()">Guardar proveedor</button>
-        <p id="proveedorCreado" class="oculto" style="font-size:13px;color:#0f6e56;margin-top:8px;font-weight:600"></p>
+        <p id="proveedorCreado" class="exito oculto"></p>
       </div>
       <div class="tarjeta">
         <h2 class="seccion">Precio por servicio (RD$)</h2>
@@ -181,6 +193,64 @@
           <div><input type="number" id="nuevoPrecioUnitario"></div>
           <div><button class="secundario" onclick="actualizarPrecio()" style="margin-top:0">Actualizar precio</button></div>
         </div>
+      </div>
+      <div class="tarjeta">
+        <h2 class="seccion">Proveedores de este comedor</h2>
+        <input type="text" id="buscarProveedorAdmin" placeholder="Buscar por nombre o código..." oninput="renderizarListaProveedores()">
+        <div class="tabla-scroll">
+          <table class="tickets">
+            <thead><tr><th>Código</th><th>Nombre</th><th>Contacto</th><th>Email</th><th>Password acceso</th><th>Estado</th><th></th></tr></thead>
+            <tbody id="tablaProveedoresAdmin"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: USUARIOS -->
+    <div id="tabUsuarios" class="oculto">
+      <div class="tarjeta">
+        <h2 class="seccion">Crear nuevo usuario</h2>
+        <div class="fila">
+          <div><label>Nombre</label><input type="text" id="nuevoUsuarioNombre" placeholder="Nombre completo"></div>
+          <div><label>Email</label><input type="text" id="nuevoUsuarioEmail" placeholder="correo@empresa.com"></div>
+        </div>
+        <label>Rol</label>
+        <select id="nuevoUsuarioRol">
+          <option value="Cajero">Cajero</option>
+          <option value="Controlador">Controlador</option>
+          <option value="Director Financiero" id="opcionDirectorFinanciero" class="oculto">Director Financiero</option>
+        </select>
+        <button class="secundario" onclick="crearUsuarioNuevo()">Crear usuario</button>
+        <p id="usuarioCreado" class="exito oculto"></p>
+      </div>
+      <div class="tarjeta">
+        <h2 class="seccion">Usuarios de este comedor</h2>
+        <input type="text" id="buscarUsuarioAdmin" placeholder="Buscar por nombre, email o rol..." oninput="renderizarListaUsuarios()">
+        <div class="tabla-scroll">
+          <table class="tickets">
+            <thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Password</th><th>Estado</th><th></th></tr></thead>
+            <tbody id="tablaUsuariosAdmin"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: INVALIDAR -->
+    <div id="tabInvalidar" class="oculto">
+      <div class="tarjeta">
+        <h2 class="seccion">Invalidar por código de QR</h2>
+        <label>Códigos (uno por línea, o separados por coma)</label>
+        <textarea id="codigosInvalidar" rows="4" placeholder="VAR001-000001&#10;VAR001-000002"></textarea>
+        <button class="secundario" onclick="invalidarPorCodigo()">Invalidar códigos</button>
+        <div id="resultadoInvalidarCodigo"></div>
+      </div>
+      <div class="tarjeta">
+        <h2 class="seccion">Invalidar todos los tickets vigentes de un proveedor</h2>
+        <label>Empresa proveedora</label>
+        <input type="text" id="empresaInvalidar" list="listaEmpresasInvalidar" placeholder="Escribe para buscar por nombre..." autocomplete="off">
+        <datalist id="listaEmpresasInvalidar"></datalist>
+        <button class="secundario" onclick="invalidarPorEmpresa()">Invalidar todos sus tickets vigentes</button>
+        <div id="resultadoInvalidarEmpresa"></div>
       </div>
     </div>
 
@@ -190,7 +260,7 @@
         <h2 class="seccion">Validar tickets</h2>
         <div class="fila">
           <div><label>Comedor</label><input type="text" id="validarComedor" readonly></div>
-          <div><label>Hotel</label><input type="text" id="validarHotel" readonly></div>
+          <div><label>Hotel</label><select id="validarHotelSelect"></select></div>
         </div>
         <label>Servicio</label>
         <select id="servicioActual"><option value="Desayuno">Desayuno</option><option value="Almuerzo">Almuerzo</option><option value="Cena">Cena</option></select>
@@ -205,7 +275,7 @@
     <!-- TAB: DASHBOARD -->
     <div id="tabDashboard" class="oculto">
       <div class="tarjeta">
-        <div id="filtroDashboard" class="comedor-trabajo oculto" style="margin-bottom:14px">
+        <div id="filtroDashboard" class="comedor-trabajo oculto">
           <label>Ver comedor</label>
           <select id="selectComedorDashboard" onchange="cargarDashboard()">
             <option value="Todos">Todos los comedores</option>
@@ -214,8 +284,21 @@
             <option value="Natura">Natura</option>
           </select>
         </div>
+
+        <div class="filtro-fecha" id="filtroFecha">
+          <button data-r="hoy" onclick="seleccionarRango('hoy')">Hoy</button>
+          <button data-r="ayer" onclick="seleccionarRango('ayer')">Ayer</button>
+          <button data-r="todo" onclick="seleccionarRango('todo')">Todo</button>
+          <button data-r="rango" onclick="seleccionarRango('rango')">Rango</button>
+          <div id="rangoFechas" class="rango-fechas oculto">
+            <input type="date" id="fechaDesde">
+            <input type="date" id="fechaHasta">
+            <button class="secundario chico" onclick="cargarDashboard()">Aplicar</button>
+          </div>
+        </div>
+
         <div class="kpis">
-          <div class="kpi"><div class="num" id="kpiVendido">-</div><div class="lbl">Total vendido (RD$)</div></div>
+          <div class="kpi" id="kpiVendidoWrap"><div class="num" id="kpiVendido">-</div><div class="lbl">Total vendido (RD$)</div></div>
           <div class="kpi"><div class="num" id="kpiTicketsVendidos">-</div><div class="lbl">Tickets vendidos</div></div>
           <div class="kpi"><div class="num" id="kpiAprobados">-</div><div class="lbl">Servicios usados</div></div>
           <div class="kpi"><div class="num" id="kpiRechazados">-</div><div class="lbl">Rechazados</div></div>
@@ -226,9 +309,19 @@
           <button class="secundario" onclick="irATab('validar')">Ir a Validar</button>
         </div>
       </div>
+
+      <div class="tarjeta">
+        <h2 class="seccion">Buscar un código de QR</h2>
+        <div class="fila">
+          <div><input type="text" id="codigoBuscar" placeholder="Ej. VAR001-000001"></div>
+          <div><button class="secundario" onclick="buscarCodigoQR()" style="margin-top:0">Buscar</button></div>
+        </div>
+        <div id="resultadoBusquedaCodigo"></div>
+      </div>
+
       <div class="tarjeta">
         <h2 class="seccion">Ventas recientes</h2>
-        <div class="tabla-scroll"><table class="tickets"><thead><tr><th>Fecha</th><th>Hotel</th><th>Comedor</th><th>Empresa</th><th>Cant.</th><th>Total</th><th>Cajero</th></tr></thead><tbody id="tablaVentas"></tbody></table></div>
+        <div class="tabla-scroll"><table class="tickets"><thead id="encabezadoVentas"></thead><tbody id="tablaVentas"></tbody></table></div>
       </div>
       <div class="tarjeta">
         <h2 class="seccion">Validaciones recientes</h2>
@@ -261,19 +354,29 @@
 <script>
 const URL_BACKEND = 'https://script.google.com/macros/s/AKfycbwWmICVQK71192ZwwN3lzSjQG2Z3AWVK8OqKvHE-FJrK4bg04hStoCIQgui7-KSJXLOfg/exec';
 const LOGO_BASE64 = 'data:image/jpeg;base64,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';
+const COMEDOR_HOTELES = { 'Varallo': ['SERPC', 'DRRPC', 'PUJJD'], 'IOR': ['BREPC', 'DROPC'], 'Natura': ['DRFPC'] };
 
 let usuarioActual = null;
 let empresas = [];
+let usuariosCache = [];
 let ticketsGenerados = [];
 let lector = null;
 let bloqueado = false;
 let historialScans = [];
 let tabActiva = null;
+let rangoActivo = 'hoy';
 
 window.addEventListener('DOMContentLoaded', () => {
   if (LOGO_BASE64.indexOf('data:image') === 0) document.getElementById('logoGrumasa').src = LOGO_BASE64;
   if (URL_BACKEND.indexOf('http') !== 0) document.getElementById('mensajeConfig').classList.remove('oculto');
+  actualizarReloj();
+  setInterval(actualizarReloj, 30000);
 });
+
+function actualizarReloj() {
+  const ahora = new Date();
+  document.getElementById('relojActual').textContent = ahora.toLocaleDateString('es-DO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' · ' + ahora.toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' });
+}
 
 // ---------- LOGIN ----------
 
@@ -294,6 +397,8 @@ async function iniciarSesion() {
     document.getElementById('vistaApp').classList.remove('oculto');
     document.querySelectorAll('.top-bar .quien').forEach(el => el.textContent = data.nombre + ' · ' + data.rol);
 
+    if (data.rol === 'Corporativo') document.getElementById('opcionDirectorFinanciero').classList.remove('oculto');
+
     montarNavegacion();
   } catch (err) {
     errorDiv.textContent = 'No se pudo conectar con el backend.';
@@ -310,21 +415,21 @@ function cerrarSesion() {
   document.getElementById('loginEmail').value = '';
   document.getElementById('loginPassword').value = '';
   document.getElementById('navTabs').innerHTML = '';
-  ['tabVenta','tabAdmin','tabValidar','tabDashboard','tabMisTickets'].forEach(id => document.getElementById(id).classList.add('oculto'));
+  ['tabVenta','tabAdmin','tabUsuarios','tabInvalidar','tabValidar','tabDashboard','tabMisTickets'].forEach(id => document.getElementById(id).classList.add('oculto'));
 }
 
 // ---------- NAVEGACIÓN POR ROL ----------
 
 function tabsParaRol(rol) {
-  if (rol === 'Cajero') return ['venta', 'dashboard'];
-  if (rol === 'Director Financiero') return ['venta', 'admin', 'dashboard'];
+  if (rol === 'Cajero') return ['venta', 'invalidar', 'dashboard'];
+  if (rol === 'Director Financiero') return ['venta', 'admin', 'usuarios', 'invalidar', 'dashboard'];
   if (rol === 'Controlador') return ['validar', 'dashboard'];
   if (rol === 'Proveedor') return ['mistickets'];
-  if (rol === 'Corporativo') return ['dashboard', 'venta', 'validar', 'admin'];
+  if (rol === 'Corporativo') return ['dashboard', 'venta', 'validar', 'admin', 'usuarios', 'invalidar'];
   return [];
 }
 
-const NOMBRES_TAB = { venta: 'Vender', admin: 'Administración', validar: 'Validar', dashboard: 'Dashboard', mistickets: 'Mis tickets' };
+const NOMBRES_TAB = { venta: 'Vender', admin: 'Administración', usuarios: 'Usuarios', invalidar: 'Invalidar', validar: 'Validar', dashboard: 'Dashboard', mistickets: 'Mis tickets' };
 
 function montarNavegacion() {
   const tabs = tabsParaRol(usuarioActual.rol);
@@ -354,42 +459,54 @@ function montarNavegacion() {
 function getComedorTrabajo() {
   return usuarioActual.rol === 'Corporativo' ? document.getElementById('comedorTrabajoSelect').value : usuarioActual.comedor;
 }
-function getHotelTrabajo() {
-  return usuarioActual.rol === 'Corporativo' ? 'Corporativo' : usuarioActual.hotel;
-}
 
 function cambioComedorTrabajo() {
   if (tabActiva === 'venta') prepararTabVenta();
   if (tabActiva === 'validar') prepararTabValidar();
   if (tabActiva === 'admin') prepararTabAdmin();
+  if (tabActiva === 'usuarios') prepararTabUsuarios();
+  if (tabActiva === 'invalidar') prepararTabInvalidar();
 }
 
 function irATab(tab) {
   tabActiva = tab;
-  ['tabVenta','tabAdmin','tabValidar','tabDashboard','tabMisTickets'].forEach(id => document.getElementById(id).classList.add('oculto'));
+  ['tabVenta','tabAdmin','tabUsuarios','tabInvalidar','tabValidar','tabDashboard','tabMisTickets'].forEach(id => document.getElementById(id).classList.add('oculto'));
   document.querySelectorAll('[id^="navBtn_"]').forEach(b => b.classList.remove('activa'));
   const btn = document.getElementById('navBtn_' + tab);
   if (btn) btn.classList.add('activa');
 
   if (tab === 'venta') { document.getElementById('tabVenta').classList.remove('oculto'); prepararTabVenta(); }
   if (tab === 'admin') { document.getElementById('tabAdmin').classList.remove('oculto'); prepararTabAdmin(); }
+  if (tab === 'usuarios') { document.getElementById('tabUsuarios').classList.remove('oculto'); prepararTabUsuarios(); }
+  if (tab === 'invalidar') { document.getElementById('tabInvalidar').classList.remove('oculto'); prepararTabInvalidar(); }
   if (tab === 'validar') { document.getElementById('tabValidar').classList.remove('oculto'); prepararTabValidar(); }
-  if (tab === 'dashboard') { document.getElementById('tabDashboard').classList.remove('oculto'); cargarDashboard(); }
+  if (tab === 'dashboard') { document.getElementById('tabDashboard').classList.remove('oculto'); ajustarDashboardPorRol(); cargarDashboard(); }
   if (tab === 'mistickets') { document.getElementById('tabMisTickets').classList.remove('oculto'); cargarMisTickets(); }
+}
+
+function poblarSelectHoteles(selectId, comedor) {
+  const sel = document.getElementById(selectId);
+  sel.innerHTML = '';
+  (COMEDOR_HOTELES[comedor] || []).forEach(h => {
+    const opt = document.createElement('option');
+    opt.value = h; opt.textContent = h;
+    sel.appendChild(opt);
+  });
 }
 
 // ---------- TAB VENTA ----------
 
 function prepararTabVenta() {
-  document.getElementById('ventaComedor').value = getComedorTrabajo();
-  document.getElementById('ventaHotel').value = getHotelTrabajo();
+  const comedor = getComedorTrabajo();
+  document.getElementById('ventaComedor').value = comedor;
+  poblarSelectHoteles('ventaHotelSelect', comedor);
   cargarEmpresas();
   cargarPrecioActual();
 }
 
 async function cargarEmpresas() {
   try {
-    const resp = await fetch(URL_BACKEND + '?action=empresas');
+    const resp = await fetch(URL_BACKEND + '?action=empresas&comedor=' + encodeURIComponent(getComedorTrabajo()));
     const data = await resp.json();
     empresas = data.slice(1).map(fila => ({ idProveedor: fila[0], nombre: fila[1] }));
     const lista = document.getElementById('listaEmpresas');
@@ -415,7 +532,7 @@ async function cargarPrecioActual() {
 
 async function generarTickets() {
   const comedor = getComedorTrabajo();
-  const hotelCaja = getHotelTrabajo();
+  const hotelCaja = document.getElementById('ventaHotelSelect').value;
   const cajero = usuarioActual.nombre;
   const idProveedor = document.getElementById('idProveedorAuto').value.trim();
   const nombreEmpresa = document.getElementById('buscarEmpresa').value.trim();
@@ -466,6 +583,7 @@ function imprimir() { window.print(); }
 
 function prepararTabAdmin() {
   cargarPrecioActual();
+  cargarListaProveedoresAdmin();
 }
 
 async function crearProveedor() {
@@ -479,9 +597,10 @@ async function crearProveedor() {
     const data = await resp.json();
     if (data.success) {
       const aviso = document.getElementById('proveedorCreado');
-      aviso.textContent = 'Proveedor creado con código: ' + data.idProveedor;
+      aviso.textContent = 'Proveedor creado con código ' + data.idProveedor + (data.passwordProveedor ? '. Credenciales enviadas a ' + emailAlertas + ' (password: ' + data.passwordProveedor + ')' : '');
       aviso.classList.remove('oculto');
       cargarEmpresas();
+      cargarListaProveedoresAdmin();
       ['nuevoNombreEmpresa','nuevoContacto','nuevoEmail'].forEach(id => document.getElementById(id).value = '');
     }
   } catch (err) { alert('No se pudo crear el proveedor.'); console.error(err); }
@@ -498,11 +617,138 @@ async function actualizarPrecio() {
   } catch (err) { alert('No se pudo actualizar el precio.'); console.error(err); }
 }
 
+let proveedoresAdminCache = [];
+
+async function cargarListaProveedoresAdmin() {
+  try {
+    const resp = await fetch(URL_BACKEND + '?action=empresas&comedor=' + encodeURIComponent(getComedorTrabajo()) + '&incluirInactivos=true');
+    const data = await resp.json();
+    proveedoresAdminCache = data.slice(1).map(f => ({ idProveedor: f[0], nombre: f[1], contacto: f[2], email: f[3], comedor: f[4], activo: f[5] }));
+    renderizarListaProveedores();
+  } catch (err) { console.error('No se pudo cargar proveedores', err); }
+}
+
+function renderizarListaProveedores() {
+  const texto = (document.getElementById('buscarProveedorAdmin').value || '').toLowerCase();
+  const filtrados = proveedoresAdminCache.filter(p => p.nombre.toLowerCase().includes(texto) || p.idProveedor.toLowerCase().includes(texto));
+  document.getElementById('tablaProveedoresAdmin').innerHTML = filtrados.map(p => `
+    <tr>
+      <td>${p.idProveedor}</td><td>${p.nombre}</td><td>${p.contacto || '-'}</td><td>${p.email || '-'}</td>
+      <td>—</td>
+      <td>${p.activo === false ? '<span class="estado-invalidado">Inactivo</span>' : '<span class="estado-vigente">Activo</span>'}</td>
+      <td><button class="secundario chico" onclick="toggleEstadoProveedor('${p.idProveedor}', ${p.activo === false})">${p.activo === false ? 'Activar' : 'Inactivar'}</button></td>
+    </tr>`).join('') || '<tr><td colspan="7">Sin proveedores todavía.</td></tr>';
+}
+
+async function toggleEstadoProveedor(idProveedor, activar) {
+  try {
+    const resp = await fetch(URL_BACKEND + '?action=cambiarEstadoEmpresa', { method: 'POST', body: JSON.stringify({ idProveedor, activo: activar }) });
+    const data = await resp.json();
+    if (data.success) cargarListaProveedoresAdmin();
+  } catch (err) { alert('No se pudo cambiar el estado.'); console.error(err); }
+}
+
+// ---------- TAB USUARIOS ----------
+
+function prepararTabUsuarios() {
+  cargarListaUsuariosAdmin();
+}
+
+async function crearUsuarioNuevo() {
+  const nombre = document.getElementById('nuevoUsuarioNombre').value.trim();
+  const email = document.getElementById('nuevoUsuarioEmail').value.trim();
+  const rol = document.getElementById('nuevoUsuarioRol').value;
+  const comedor = getComedorTrabajo();
+  if (!nombre || !email) { alert('Completa nombre y correo.'); return; }
+  try {
+    const resp = await fetch(URL_BACKEND + '?action=crearUsuario', { method: 'POST', body: JSON.stringify({ nombre, email, rol, comedor, creadorRol: usuarioActual.rol }) });
+    const data = await resp.json();
+    if (data.success) {
+      const aviso = document.getElementById('usuarioCreado');
+      aviso.textContent = 'Usuario creado. Password asignado: ' + data.password + ' (compártelo con ' + nombre + ')';
+      aviso.classList.remove('oculto');
+      cargarListaUsuariosAdmin();
+      ['nuevoUsuarioNombre','nuevoUsuarioEmail'].forEach(id => document.getElementById(id).value = '');
+    } else {
+      alert(data.error || 'No se pudo crear el usuario.');
+    }
+  } catch (err) { alert('No se pudo crear el usuario.'); console.error(err); }
+}
+
+async function cargarListaUsuariosAdmin() {
+  try {
+    const comedor = usuarioActual.rol === 'Corporativo' ? 'Todos' : getComedorTrabajo();
+    const resp = await fetch(URL_BACKEND + '?action=usuarios&comedor=' + encodeURIComponent(comedor));
+    const data = await resp.json();
+    usuariosCache = data.slice(1).map(f => ({ nombre: f[0], email: f[1], comedor: f[3], rol: f[4], password: f[5], activo: f[7] }))
+      .filter(u => u.email !== usuarioActual.email); // no te muestra tu propia cuenta
+    renderizarListaUsuarios();
+  } catch (err) { console.error('No se pudo cargar usuarios', err); }
+}
+
+function renderizarListaUsuarios() {
+  const texto = (document.getElementById('buscarUsuarioAdmin').value || '').toLowerCase();
+  const filtrados = usuariosCache.filter(u => u.nombre.toLowerCase().includes(texto) || u.email.toLowerCase().includes(texto) || u.rol.toLowerCase().includes(texto));
+  document.getElementById('tablaUsuariosAdmin').innerHTML = filtrados.map(u => `
+    <tr>
+      <td>${u.nombre}</td><td>${u.email}</td><td>${u.rol}</td><td>${u.password}</td>
+      <td>${u.activo === false ? '<span class="estado-invalidado">Inactivo</span>' : '<span class="estado-vigente">Activo</span>'}</td>
+      <td><button class="secundario chico" onclick="toggleEstadoUsuario('${u.email}', ${u.activo === false})">${u.activo === false ? 'Activar' : 'Inactivar'}</button></td>
+    </tr>`).join('') || '<tr><td colspan="6">Sin usuarios todavía.</td></tr>';
+}
+
+async function toggleEstadoUsuario(email, activar) {
+  try {
+    const resp = await fetch(URL_BACKEND + '?action=cambiarEstadoUsuario', { method: 'POST', body: JSON.stringify({ email, activo: activar }) });
+    const data = await resp.json();
+    if (data.success) cargarListaUsuariosAdmin();
+  } catch (err) { alert('No se pudo cambiar el estado.'); console.error(err); }
+}
+
+// ---------- TAB INVALIDAR ----------
+
+function prepararTabInvalidar() {
+  cargarEmpresasParaInvalidar();
+}
+
+async function cargarEmpresasParaInvalidar() {
+  try {
+    const resp = await fetch(URL_BACKEND + '?action=empresas&comedor=' + encodeURIComponent(getComedorTrabajo()));
+    const data = await resp.json();
+    const lista = document.getElementById('listaEmpresasInvalidar');
+    lista.innerHTML = '';
+    data.slice(1).forEach(f => { const opt = document.createElement('option'); opt.value = f[1]; lista.appendChild(opt); });
+  } catch (err) { console.error(err); }
+}
+
+async function invalidarPorCodigo() {
+  const texto = document.getElementById('codigosInvalidar').value.trim();
+  if (!texto) { alert('Escribe al menos un código.'); return; }
+  const codigos = texto.split(/[\n,]+/).map(c => c.trim()).filter(Boolean);
+  try {
+    const resp = await fetch(URL_BACKEND + '?action=invalidarTickets', { method: 'POST', body: JSON.stringify({ codigos, quien: usuarioActual.nombre }) });
+    const data = await resp.json();
+    document.getElementById('resultadoInvalidarCodigo').innerHTML = `<p class="exito">${data.total} código(s) invalidado(s): ${data.invalidados.join(', ') || 'ninguno (revisa que estén vigentes)'}</p>`;
+    document.getElementById('codigosInvalidar').value = '';
+  } catch (err) { alert('No se pudo invalidar.'); console.error(err); }
+}
+
+async function invalidarPorEmpresa() {
+  const empresa = document.getElementById('empresaInvalidar').value.trim();
+  if (!empresa) { alert('Escribe o selecciona una empresa.'); return; }
+  try {
+    const resp = await fetch(URL_BACKEND + '?action=invalidarTickets', { method: 'POST', body: JSON.stringify({ empresa, comedor: getComedorTrabajo(), quien: usuarioActual.nombre }) });
+    const data = await resp.json();
+    document.getElementById('resultadoInvalidarEmpresa').innerHTML = `<p class="exito">${data.total} ticket(s) invalidado(s) para ${empresa}.</p>`;
+  } catch (err) { alert('No se pudo invalidar.'); console.error(err); }
+}
+
 // ---------- TAB VALIDAR ----------
 
 function prepararTabValidar() {
-  document.getElementById('validarComedor').value = getComedorTrabajo();
-  document.getElementById('validarHotel').value = getHotelTrabajo();
+  const comedor = getComedorTrabajo();
+  document.getElementById('validarComedor').value = comedor;
+  poblarSelectHoteles('validarHotelSelect', comedor);
 }
 
 function iniciarCamara() {
@@ -527,7 +773,7 @@ async function onEscaneoExitoso(codigoDecodificado) {
   const payload = {
     codigo: codigoDecodificado.trim(),
     comedor: getComedorTrabajo(),
-    hotel: getHotelTrabajo(),
+    hotel: document.getElementById('validarHotelSelect').value,
     servicio: document.getElementById('servicioActual').value,
     controlador: usuarioActual.nombre
   };
@@ -554,29 +800,78 @@ function mostrarResultadoValidacion(codigo, data) {
 
 // ---------- TAB DASHBOARD ----------
 
+function ajustarDashboardPorRol() {
+  const esControlador = usuarioActual.rol === 'Controlador';
+  document.getElementById('kpiVendidoWrap').classList.toggle('oculto', esControlador);
+  const encabezado = document.getElementById('encabezadoVentas');
+  encabezado.innerHTML = esControlador
+    ? '<tr><th>Fecha</th><th>Hotel</th><th>Comedor</th><th>Empresa</th><th>Cant.</th><th>Cajero</th></tr>'
+    : '<tr><th>Fecha</th><th>Hotel</th><th>Comedor</th><th>Empresa</th><th>Cant.</th><th>Total</th><th>Cajero</th></tr>';
+}
+
+function seleccionarRango(r) {
+  rangoActivo = r;
+  document.querySelectorAll('#filtroFecha button[data-r]').forEach(b => b.classList.toggle('activo', b.dataset.r === r));
+  document.getElementById('rangoFechas').classList.toggle('oculto', r !== 'rango');
+  if (r !== 'rango') cargarDashboard();
+}
+
+function calcularFechas() {
+  const hoyStr = new Date().toISOString().slice(0, 10);
+  if (rangoActivo === 'hoy') return { desde: hoyStr, hasta: hoyStr };
+  if (rangoActivo === 'ayer') {
+    const d = new Date(); d.setDate(d.getDate() - 1);
+    const s = d.toISOString().slice(0, 10);
+    return { desde: s, hasta: s };
+  }
+  if (rangoActivo === 'todo') return { desde: '', hasta: '' };
+  return { desde: document.getElementById('fechaDesde').value, hasta: document.getElementById('fechaHasta').value };
+}
+
 async function cargarDashboard() {
   const comedor = usuarioActual.rol === 'Corporativo' ? document.getElementById('selectComedorDashboard').value : usuarioActual.comedor;
+  const { desde, hasta } = calcularFechas();
   try {
-    const resp = await fetch(URL_BACKEND + '?action=dashboard&comedor=' + encodeURIComponent(comedor));
+    const resp = await fetch(URL_BACKEND + '?action=dashboard&comedor=' + encodeURIComponent(comedor) + '&fechaDesde=' + desde + '&fechaHasta=' + hasta);
     const data = await resp.json();
+    const esControlador = usuarioActual.rol === 'Controlador';
+
     document.getElementById('kpiVendido').textContent = 'RD$ ' + Number(data.resumen.totalVendidoRD).toLocaleString();
     document.getElementById('kpiTicketsVendidos').textContent = data.resumen.totalTicketsVendidos;
     document.getElementById('kpiAprobados').textContent = data.resumen.totalAprobados;
     document.getElementById('kpiRechazados').textContent = data.resumen.totalRechazados;
     document.getElementById('kpiAlertas').textContent = data.resumen.totalAlertas;
 
-    document.getElementById('tablaVentas').innerHTML = data.ventas.slice(0, 50).map(v =>
-      `<tr><td>${formatearFecha(v.fecha)}</td><td>${v.hotelCaja}</td><td>${v.comedor}</td><td>${v.empresa}</td><td>${v.cantidad}</td><td>RD$ ${v.total}</td><td>${v.cajero}</td></tr>`
-    ).join('') || '<tr><td colspan="7">Sin ventas todavía.</td></tr>';
+    document.getElementById('tablaVentas').innerHTML = data.ventas.slice(0, 50).map(v => esControlador
+      ? `<tr><td>${formatearFecha(v.fecha)}</td><td>${v.hotelCaja}</td><td>${v.comedor}</td><td>${v.empresa}</td><td>${v.cantidad}</td><td>${v.cajero}</td></tr>`
+      : `<tr><td>${formatearFecha(v.fecha)}</td><td>${v.hotelCaja}</td><td>${v.comedor}</td><td>${v.empresa}</td><td>${v.cantidad}</td><td>RD$ ${v.total}</td><td>${v.cajero}</td></tr>`
+    ).join('') || `<tr><td colspan="${esControlador ? 6 : 7}">Sin ventas en este rango.</td></tr>`;
 
     document.getElementById('tablaValidaciones').innerHTML = data.validaciones.slice(0, 50).map(v =>
       `<tr><td>${v.codigo}</td><td class="estado-${v.resultado}">${v.resultado}</td><td>${v.comedor}</td><td>${v.servicio}</td><td>${formatearFecha(v.fechaHora)}</td><td>${v.controlador}</td></tr>`
-    ).join('') || '<tr><td colspan="6">Sin validaciones todavía.</td></tr>';
+    ).join('') || '<tr><td colspan="6">Sin validaciones en este rango.</td></tr>';
 
     document.getElementById('tablaAlertas').innerHTML = data.alertas.slice(0, 50).map(a =>
       `<tr><td>${a.codigo}</td><td>${a.empresa}</td><td>${a.comedorIntento}</td><td>${formatearFecha(a.fechaHoraIntento)}</td><td>${a.comedorUsoOriginal} · ${formatearFecha(a.fechaUsoOriginal)}</td></tr>`
     ).join('') || '<tr><td colspan="5">Sin alertas de duplicado.</td></tr>';
   } catch (err) { console.error('No se pudo cargar el dashboard', err); }
+}
+
+async function buscarCodigoQR() {
+  const codigo = document.getElementById('codigoBuscar').value.trim();
+  if (!codigo) return;
+  try {
+    const resp = await fetch(URL_BACKEND + '?action=buscarCodigo&codigo=' + encodeURIComponent(codigo));
+    const data = await resp.json();
+    const div = document.getElementById('resultadoBusquedaCodigo');
+    if (!data.encontrado) { div.innerHTML = '<p class="error">Código no encontrado.</p>'; return; }
+    div.innerHTML = `
+      <p><strong>${data.codigo}</strong> · ${data.empresa} · Comedor ${data.comedorAutorizado}</p>
+      <p>Estado: <span class="estado-${data.estado}">${data.estado}</span> ${data.estado === 'usado' ? '· usado el ' + formatearFecha(data.fechaUso) + ' en ' + data.comedorUso + ' (' + data.servicioUso + ')' : ''}</p>
+      <p style="font-size:12px;color:#666">Vigencia: ${data.vigenciaDesde} a ${data.vigenciaHasta}</p>
+      ${data.historial.length ? '<div class="historial">' + data.historial.map(h => `<div>${formatearFecha(h.fechaHora)} · ${h.resultado} · ${h.comedor}</div>`).join('') + '</div>' : ''}
+    `;
+  } catch (err) { console.error(err); }
 }
 
 function formatearFecha(valor) {
