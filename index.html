@@ -146,7 +146,7 @@
         <h2 class="seccion">Vender tickets</h2>
         <div class="fila">
           <div><label>Comedor</label><input type="text" id="ventaComedor" readonly></div>
-          <div><label>Hotel</label><select id="ventaHotelSelect"></select></div>
+          <div><label>Hotel</label><input type="text" id="ventaHotel" readonly></div>
         </div>
         <div class="separador">
           <label>Empresa proveedora</label>
@@ -260,7 +260,7 @@
         <h2 class="seccion">Validar tickets</h2>
         <div class="fila">
           <div><label>Comedor</label><input type="text" id="validarComedor" readonly></div>
-          <div><label>Hotel</label><select id="validarHotelSelect"></select></div>
+          <div><label>Hotel</label><input type="text" id="validarHotel" readonly></div>
         </div>
         <label>Servicio</label>
         <select id="servicioActual"><option value="Desayuno">Desayuno</option><option value="Almuerzo">Almuerzo</option><option value="Cena">Cena</option></select>
@@ -484,14 +484,8 @@ function irATab(tab) {
   if (tab === 'mistickets') { document.getElementById('tabMisTickets').classList.remove('oculto'); cargarMisTickets(); }
 }
 
-function poblarSelectHoteles(selectId, comedor) {
-  const sel = document.getElementById(selectId);
-  sel.innerHTML = '';
-  (COMEDOR_HOTELES[comedor] || []).forEach(h => {
-    const opt = document.createElement('option');
-    opt.value = h; opt.textContent = h;
-    sel.appendChild(opt);
-  });
+function textoHotelesComedor(comedor) {
+  return (COMEDOR_HOTELES[comedor] || []).join(' · ');
 }
 
 // ---------- TAB VENTA ----------
@@ -499,7 +493,7 @@ function poblarSelectHoteles(selectId, comedor) {
 function prepararTabVenta() {
   const comedor = getComedorTrabajo();
   document.getElementById('ventaComedor').value = comedor;
-  poblarSelectHoteles('ventaHotelSelect', comedor);
+  document.getElementById('ventaHotel').value = textoHotelesComedor(comedor);
   cargarEmpresas();
   cargarPrecioActual();
 }
@@ -532,7 +526,7 @@ async function cargarPrecioActual() {
 
 async function generarTickets() {
   const comedor = getComedorTrabajo();
-  const hotelCaja = document.getElementById('ventaHotelSelect').value;
+  const hotelCaja = textoHotelesComedor(comedor);
   const cajero = usuarioActual.nombre;
   const idProveedor = document.getElementById('idProveedorAuto').value.trim();
   const nombreEmpresa = document.getElementById('buscarEmpresa').value.trim();
@@ -748,7 +742,7 @@ async function invalidarPorEmpresa() {
 function prepararTabValidar() {
   const comedor = getComedorTrabajo();
   document.getElementById('validarComedor').value = comedor;
-  poblarSelectHoteles('validarHotelSelect', comedor);
+  document.getElementById('validarHotel').value = textoHotelesComedor(comedor);
 }
 
 function iniciarCamara() {
@@ -773,7 +767,7 @@ async function onEscaneoExitoso(codigoDecodificado) {
   const payload = {
     codigo: codigoDecodificado.trim(),
     comedor: getComedorTrabajo(),
-    hotel: document.getElementById('validarHotelSelect').value,
+    hotel: textoHotelesComedor(getComedorTrabajo()),
     servicio: document.getElementById('servicioActual').value,
     controlador: usuarioActual.nombre
   };
