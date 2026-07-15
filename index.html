@@ -126,10 +126,24 @@
   <div id="vistaApp" class="contenedor oculto">
     <div class="top-bar">
       <span class="quien"></span>
+      <button class="salir" onclick="mostrarCambiarPassword()" style="color:var(--azul-oscuro);margin-right:10px">Cambiar contraseña</button>
       <button class="salir" onclick="cerrarSesion()">Cerrar sesión</button>
     </div>
 
     <div class="nav-tabs" id="navTabs"></div>
+
+    <div id="panelCambiarPassword" class="tarjeta oculto" style="max-width:380px">
+      <h2 class="seccion">Cambiar contraseña</h2>
+      <label>Contraseña actual</label>
+      <input type="password" id="passwordActualInput">
+      <label>Contraseña nueva</label>
+      <input type="password" id="passwordNuevaInput">
+      <div style="display:flex;gap:10px">
+        <button onclick="ejecutarConCarga(this, guardarNuevaPassword)">Guardar</button>
+        <button class="secundario" onclick="document.getElementById('panelCambiarPassword').classList.add('oculto')">Cancelar</button>
+      </div>
+      <div id="resultadoCambiarPassword"></div>
+    </div>
 
     <div id="comedorTrabajoWrap" class="comedor-trabajo oculto">
       <label>Comedor de trabajo</label>
@@ -432,6 +446,30 @@ function cerrarSesion() {
   ['tabVenta','tabAdmin','tabUsuarios','tabInvalidar','tabValidar','tabDashboard','tabMisTickets'].forEach(id => document.getElementById(id).classList.add('oculto'));
 }
 
+function mostrarCambiarPassword() {
+  document.getElementById('passwordActualInput').value = '';
+  document.getElementById('passwordNuevaInput').value = '';
+  document.getElementById('resultadoCambiarPassword').innerHTML = '';
+  document.getElementById('panelCambiarPassword').classList.remove('oculto');
+}
+
+async function guardarNuevaPassword() {
+  const passwordActual = document.getElementById('passwordActualInput').value.trim();
+  const passwordNueva = document.getElementById('passwordNuevaInput').value.trim();
+  const div = document.getElementById('resultadoCambiarPassword');
+  if (!passwordActual || !passwordNueva) { div.innerHTML = '<p class="error">Completa ambos campos.</p>'; return; }
+  try {
+    const resp = await fetch(URL_BACKEND + '?action=cambiarPassword', { method: 'POST', body: JSON.stringify({ email: usuarioActual.email, passwordActual, passwordNueva }) });
+    const data = await resp.json();
+    if (data.success) {
+      div.innerHTML = '<p class="exito">Contraseña actualizada.</p>';
+      setTimeout(() => document.getElementById('panelCambiarPassword').classList.add('oculto'), 1200);
+    } else {
+      div.innerHTML = `<p class="error">${data.error}</p>`;
+    }
+  } catch (err) { div.innerHTML = '<p class="error">No se pudo actualizar.</p>'; console.error(err); }
+}
+
 // ---------- NAVEGACIÓN POR ROL ----------
 
 function tabsParaRol(rol) {
@@ -699,7 +737,7 @@ async function crearUsuarioNuevo() {
   if (!nombre) { alert('Escribe el nombre.'); return; }
   if (!email && rol !== 'Controlador') { alert('El correo es obligatorio para este rol.'); return; }
   try {
-    const resp = await fetch(URL_BACKEND + '?action=crearUsuario', { method: 'POST', body: JSON.stringify({ nombre, email, rol, comedor, creadorRol: usuarioActual.rol, emailCreador: usuarioActual.email }) });
+    const resp = await fetch(URL_BACKEND + '?action=crearUsuario', { method: 'POST', body: JSON.stringify({ nombre, email, rol, comedor, creadorRol: usuarioActual.rol, creadorNombre: usuarioActual.nombre, emailCreador: usuarioActual.email }) });
     const data = await resp.json();
     if (data.success) {
       const aviso = document.getElementById('usuarioCreado');
