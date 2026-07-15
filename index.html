@@ -115,7 +115,7 @@
     <input type="email" id="loginEmail" placeholder="tu.correo@empresa.com" autocomplete="off">
     <label>Contraseña</label>
     <input type="password" id="loginPassword" placeholder="****">
-    <button onclick="iniciarSesion()">Ingresar</button>
+    <button onclick="ejecutarConCarga(this, iniciarSesion)">Ingresar</button>
     <div id="loginError" class="error oculto"></div>
     <div id="mensajeConfig" class="aviso oculto">
       Falta configurar la URL del backend. Busca <code>URL_BACKEND</code> en el código de esta página.
@@ -168,7 +168,7 @@
           <label><input type="checkbox" value="Almuerzo" checked> Almuerzo</label>
           <label><input type="checkbox" value="Cena" checked> Cena</label>
         </div>
-        <button onclick="generarTickets()">Generar tickets</button>
+        <button onclick="ejecutarConCarga(this, generarTickets)">Generar tickets</button>
         <div id="resultadoVenta"></div>
         <div style="font-size:12px;color:#888;margin-top:16px">Hoja carta: 12 tickets por página (3x4).</div>
       </div>
@@ -184,14 +184,14 @@
         </div>
         <label>Email para alertas y acceso al portal</label>
         <input type="text" id="nuevoEmail" placeholder="correo@empresa.com">
-        <button class="secundario" onclick="crearProveedor()">Guardar proveedor</button>
+        <button class="secundario" onclick="ejecutarConCarga(this, crearProveedor)">Guardar proveedor</button>
         <p id="proveedorCreado" class="exito oculto"></p>
       </div>
       <div class="tarjeta">
         <h2 class="seccion">Precio por servicio (RD$)</h2>
         <div class="fila">
           <div><input type="number" id="nuevoPrecioUnitario"></div>
-          <div><button class="secundario" onclick="actualizarPrecio()" style="margin-top:0">Actualizar precio</button></div>
+          <div><button class="secundario" onclick="ejecutarConCarga(this, actualizarPrecio)" style="margin-top:0">Actualizar precio</button></div>
         </div>
       </div>
       <div class="tarjeta">
@@ -212,7 +212,7 @@
         <h2 class="seccion">Crear nuevo usuario</h2>
         <div class="fila">
           <div><label>Nombre</label><input type="text" id="nuevoUsuarioNombre" placeholder="Nombre completo"></div>
-          <div><label>Email</label><input type="text" id="nuevoUsuarioEmail" placeholder="correo@empresa.com"></div>
+          <div><label>Email (opcional solo si es Controlador)</label><input type="text" id="nuevoUsuarioEmail" placeholder="correo@empresa.com"></div>
         </div>
         <label>Rol</label>
         <select id="nuevoUsuarioRol">
@@ -220,7 +220,7 @@
           <option value="Controlador">Controlador</option>
           <option value="Director Financiero" id="opcionDirectorFinanciero" class="oculto">Director Financiero</option>
         </select>
-        <button class="secundario" onclick="crearUsuarioNuevo()">Crear usuario</button>
+        <button class="secundario" onclick="ejecutarConCarga(this, crearUsuarioNuevo)">Crear usuario</button>
         <p id="usuarioCreado" class="exito oculto"></p>
       </div>
       <div class="tarjeta">
@@ -241,7 +241,7 @@
         <h2 class="seccion">Invalidar por código de QR</h2>
         <label>Códigos (uno por línea, o separados por coma)</label>
         <textarea id="codigosInvalidar" rows="4" placeholder="VAR001-000001&#10;VAR001-000002"></textarea>
-        <button class="secundario" onclick="invalidarPorCodigo()">Invalidar códigos</button>
+        <button class="secundario" onclick="ejecutarConCarga(this, invalidarPorCodigo)">Invalidar códigos</button>
         <div id="resultadoInvalidarCodigo"></div>
       </div>
       <div class="tarjeta">
@@ -249,7 +249,7 @@
         <label>Empresa proveedora</label>
         <input type="text" id="empresaInvalidar" list="listaEmpresasInvalidar" placeholder="Escribe para buscar por nombre..." autocomplete="off">
         <datalist id="listaEmpresasInvalidar"></datalist>
-        <button class="secundario" onclick="invalidarPorEmpresa()">Invalidar todos sus tickets vigentes</button>
+        <button class="secundario" onclick="ejecutarConCarga(this, invalidarPorEmpresa)">Invalidar todos sus tickets vigentes</button>
         <div id="resultadoInvalidarEmpresa"></div>
       </div>
     </div>
@@ -314,7 +314,7 @@
         <h2 class="seccion">Buscar un código de QR</h2>
         <div class="fila">
           <div><input type="text" id="codigoBuscar" placeholder="Ej. VAR001-000001"></div>
-          <div><button class="secundario" onclick="buscarCodigoQR()" style="margin-top:0">Buscar</button></div>
+          <div><button class="secundario" onclick="ejecutarConCarga(this, buscarCodigoQR)" style="margin-top:0">Buscar</button></div>
         </div>
         <div id="resultadoBusquedaCodigo"></div>
       </div>
@@ -377,6 +377,19 @@ window.addEventListener('DOMContentLoaded', () => {
 function actualizarReloj() {
   const ahora = new Date();
   document.getElementById('relojActual').textContent = ahora.toLocaleDateString('es-DO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' · ' + ahora.toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' });
+}
+
+async function ejecutarConCarga(boton, fn) {
+  if (boton.disabled) return;
+  const textoOriginal = boton.textContent;
+  boton.disabled = true;
+  boton.textContent = 'Procesando...';
+  try {
+    await fn();
+  } finally {
+    boton.disabled = false;
+    boton.textContent = textoOriginal;
+  }
 }
 
 // ---------- LOGIN ----------
@@ -552,7 +565,10 @@ async function generarTickets() {
 
 function mostrarVistaPreviaVenta() {
   const resultado = document.getElementById('resultadoVenta');
-  resultado.innerHTML = `<p><strong>${ticketsGenerados.length}</strong> tickets generados.</p><button class="secundario" onclick="imprimir()">Imprimir (hoja carta, 12 por página)</button>`;
+  resultado.innerHTML = `<p><strong>${ticketsGenerados.length}</strong> tickets generados.</p>
+    <button class="secundario" onclick="ejecutarConCarga(this, imprimir)">Imprimir (hoja carta, 12 por página)</button>
+    <button class="secundario" onclick="ejecutarConCarga(this, enviarTicketsPorEmail)">Enviar por correo</button>
+    <div id="resultadoEnvioEmail"></div>`;
   const area = document.getElementById('areaImpresion');
   area.innerHTML = '';
   for (let i = 0; i < ticketsGenerados.length; i += 12) {
@@ -583,6 +599,22 @@ function limpiarFormularioVenta() {
 }
 
 function imprimir() { window.print(); }
+
+async function enviarTicketsPorEmail() {
+  const div = document.getElementById('resultadoEnvioEmail');
+  if (!ticketsGenerados.length) return;
+  const codigos = ticketsGenerados.map(t => t.codigo);
+  const nombreEmpresa = ticketsGenerados[0].empresa;
+  const comedor = ticketsGenerados[0].comedor;
+  const servicios = ticketsGenerados[0].servicio;
+  const vigenciaHasta = ticketsGenerados[0].vigencia;
+  try {
+    const resp = await fetch(URL_BACKEND + '?action=enviarTicketsPorEmail', { method: 'POST', body: JSON.stringify({ codigos, nombreEmpresa, comedor, servicios, vigenciaHasta }) });
+    const data = await resp.json();
+    if (data.success) div.innerHTML = `<p class="exito">Enviado a ${data.email}</p>`;
+    else div.innerHTML = `<p class="error">${data.error}</p>`;
+  } catch (err) { div.innerHTML = '<p class="error">No se pudo enviar el correo.</p>'; console.error(err); }
+}
 
 // ---------- TAB ADMIN ----------
 
@@ -664,13 +696,14 @@ async function crearUsuarioNuevo() {
   const email = document.getElementById('nuevoUsuarioEmail').value.trim();
   const rol = document.getElementById('nuevoUsuarioRol').value;
   const comedor = getComedorTrabajo();
-  if (!nombre || !email) { alert('Completa nombre y correo.'); return; }
+  if (!nombre) { alert('Escribe el nombre.'); return; }
+  if (!email && rol !== 'Controlador') { alert('El correo es obligatorio para este rol.'); return; }
   try {
-    const resp = await fetch(URL_BACKEND + '?action=crearUsuario', { method: 'POST', body: JSON.stringify({ nombre, email, rol, comedor, creadorRol: usuarioActual.rol }) });
+    const resp = await fetch(URL_BACKEND + '?action=crearUsuario', { method: 'POST', body: JSON.stringify({ nombre, email, rol, comedor, creadorRol: usuarioActual.rol, emailCreador: usuarioActual.email }) });
     const data = await resp.json();
     if (data.success) {
       const aviso = document.getElementById('usuarioCreado');
-      aviso.textContent = 'Usuario creado. Password asignado: ' + data.password + ' (compártelo con ' + nombre + ')';
+      aviso.textContent = 'Usuario creado. Password: ' + data.password + '. Credenciales e instructivo enviados por correo' + (email ? ' a ' + email : ' a tu correo (' + usuarioActual.email + ') para que lo entregues en persona') + '.';
       aviso.classList.remove('oculto');
       cargarListaUsuariosAdmin();
       ['nuevoUsuarioNombre','nuevoUsuarioEmail'].forEach(id => document.getElementById(id).value = '');
@@ -871,12 +904,15 @@ async function buscarCodigoQR() {
     const data = await resp.json();
     const div = document.getElementById('resultadoBusquedaCodigo');
     if (!data.encontrado) { div.innerHTML = '<p class="error">Código no encontrado.</p>'; return; }
+    const esCorporativo = usuarioActual.rol === 'Corporativo';
     div.innerHTML = `
       <p><strong>${data.codigo}</strong> · ${data.empresa} · Comedor ${data.comedorAutorizado}</p>
       <p>Estado: <span class="estado-${data.estado}">${data.estado}</span> ${data.estado === 'usado' ? '· usado el ' + formatearFecha(data.fechaUso) + ' en ' + data.comedorUso + ' (' + data.servicioUso + ')' : ''}</p>
       <p style="font-size:12px;color:#666">Vigencia: ${data.vigenciaDesde} a ${data.vigenciaHasta}</p>
+      ${esCorporativo ? '<div id="qrBusquedaCodigo" style="margin:10px 0"></div>' : ''}
       ${data.historial.length ? '<div class="historial">' + data.historial.map(h => `<div>${formatearFecha(h.fechaHora)} · ${h.resultado} · ${h.comedor}</div>`).join('') + '</div>' : ''}
     `;
+    if (esCorporativo) new QRCode(document.getElementById('qrBusquedaCodigo'), { text: data.codigo, width: 120, height: 120 });
   } catch (err) { console.error(err); }
 }
 
