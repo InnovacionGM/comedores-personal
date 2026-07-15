@@ -342,7 +342,7 @@
           <div><div class="num" id="resUsados">0</div><div class="lbl">Usados</div></div>
           <div><div class="num" id="resTotal">0</div><div class="lbl">Total comprados</div></div>
         </div>
-        <table class="tickets" id="tablaMisTickets"><thead><tr><th>Código</th><th>Estado</th><th>Uso</th><th>Vigencia</th></tr></thead><tbody></tbody></table>
+        <table class="tickets" id="tablaMisTickets"><thead><tr><th>Código</th><th>Estado</th><th>Uso</th><th>Vigencia</th><th>QR</th></tr></thead><tbody></tbody></table>
       </div>
     </div>
 
@@ -934,13 +934,27 @@ async function cargarMisTickets() {
       if (t.estado === 'vigente') vigentes++; else if (t.estado === 'usado') usados++;
       const tr = document.createElement('tr');
       const usoTexto = t.estado === 'usado' ? (t.servicioUso + ' · ' + t.fechaUso) : '-';
-      tr.innerHTML = `<td>${t.codigo}</td><td class="estado-${t.estado === 'vigente' ? 'vigente' : 'usado'}">${t.estado}</td><td>${usoTexto}</td><td>${t.vigenciaHasta || '-'}</td>`;
+      tr.innerHTML = `<td>${t.codigo}</td><td class="estado-${t.estado === 'vigente' ? 'vigente' : 'usado'}">${t.estado}</td><td>${usoTexto}</td><td>${t.vigenciaHasta || '-'}</td><td><button class="secundario chico" onclick="toggleQrProveedor('${t.codigo}')">Ver QR</button><div id="qrfila-${t.codigo}" class="oculto" style="margin-top:6px"></div></td>`;
       tbody.appendChild(tr);
     });
     document.getElementById('resVigentes').textContent = vigentes;
     document.getElementById('resUsados').textContent = usados;
     document.getElementById('resTotal').textContent = data.length;
   } catch (err) { console.error('No se pudo cargar mis tickets', err); }
+}
+
+function toggleQrProveedor(codigo) {
+  const div = document.getElementById('qrfila-' + codigo);
+  if (!div) return;
+  if (div.classList.contains('oculto')) {
+    div.classList.remove('oculto');
+    if (!div.dataset.rendered) {
+      new QRCode(div, { text: codigo, width: 100, height: 100 });
+      div.dataset.rendered = '1';
+    }
+  } else {
+    div.classList.add('oculto');
+  }
 }
 </script>
 </body>
