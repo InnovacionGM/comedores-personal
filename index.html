@@ -167,9 +167,15 @@
           <input type="text" id="buscarEmpresa" list="listaEmpresas" placeholder="Escribe para buscar por nombre..." oninput="seleccionarEmpresa()" autocomplete="off">
           <datalist id="listaEmpresas"></datalist>
           <input type="text" id="idProveedorAuto" readonly style="margin-top:8px" placeholder="El código de proveedor aparece aquí al seleccionar la empresa">
+          <p id="avisoSinCargo" class="exito oculto" style="margin-top:8px">Este proveedor es SIN CARGO - no se cobrará esta venta.</p>
         </div>
+        <label>Tipo de QR</label>
+        <select id="tipoQRSelect" onchange="cambiarTipoQR()">
+          <option value="multi">Multicódigos (un QR por ticket)</option>
+          <option value="unico">Único código (reutilizable, con límite diario por servicio)</option>
+        </select>
         <div class="fila">
-          <div><label>Cantidad de tickets</label><input type="number" id="cantidad" min="1" value="12"></div>
+          <div><label id="labelCantidad">Cantidad de tickets</label><input type="number" id="cantidad" min="1" value="12"></div>
           <div><label>Precio unitario (RD$)</label><input type="text" id="precioUnitario" readonly></div>
         </div>
         <div class="fila">
@@ -198,6 +204,18 @@
         </div>
         <label>Email para alertas y acceso al portal</label>
         <input type="text" id="nuevoEmail" placeholder="correo@empresa.com">
+        <div class="fila">
+          <div>
+            <label>Tipo de QR por defecto</label>
+            <select id="nuevoTipoQRDefault">
+              <option value="multi">Multicódigos</option>
+              <option value="unico">Único código</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end;padding-bottom:9px">
+            <label style="display:flex;align-items:center;gap:8px;font-weight:400;margin:0"><input type="checkbox" id="nuevoSinCargo" style="width:auto"> Sin cargo (no paga)</label>
+          </div>
+        </div>
         <button class="secundario" onclick="ejecutarConCarga(this, crearProveedor)">Guardar proveedor</button>
         <p id="proveedorCreado" class="exito oculto"></p>
       </div>
@@ -244,6 +262,20 @@
           <table class="tickets">
             <thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Password</th><th>Estado</th><th></th></tr></thead>
             <tbody id="tablaUsuariosAdmin"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: TICKETS -->
+    <div id="tabTickets" class="oculto">
+      <div class="tarjeta">
+        <h2 class="seccion">Todos los tickets de este comedor</h2>
+        <input type="text" id="buscarTickets" placeholder="Buscar por proveedor o código..." oninput="renderizarListaTickets()">
+        <div class="tabla-scroll">
+          <table class="tickets">
+            <thead><tr><th>Código</th><th>Empresa</th><th>Tipo</th><th>Estado</th><th>Servicios</th><th>Vigencia</th></tr></thead>
+            <tbody id="tablaTicketsComedor"></tbody>
           </table>
         </div>
       </div>
@@ -443,7 +475,7 @@ function cerrarSesion() {
   document.getElementById('loginEmail').value = '';
   document.getElementById('loginPassword').value = '';
   document.getElementById('navTabs').innerHTML = '';
-  ['tabVenta','tabAdmin','tabUsuarios','tabInvalidar','tabValidar','tabDashboard','tabMisTickets'].forEach(id => document.getElementById(id).classList.add('oculto'));
+  ['tabVenta','tabAdmin','tabUsuarios','tabTickets','tabInvalidar','tabValidar','tabDashboard','tabMisTickets'].forEach(id => document.getElementById(id).classList.add('oculto'));
 }
 
 function mostrarCambiarPassword() {
@@ -473,15 +505,15 @@ async function guardarNuevaPassword() {
 // ---------- NAVEGACIÓN POR ROL ----------
 
 function tabsParaRol(rol) {
-  if (rol === 'Cajero') return ['venta', 'invalidar', 'dashboard'];
-  if (rol === 'Director Financiero') return ['venta', 'admin', 'usuarios', 'invalidar', 'dashboard'];
+  if (rol === 'Cajero') return ['venta', 'tickets', 'invalidar', 'dashboard'];
+  if (rol === 'Director Financiero') return ['venta', 'admin', 'usuarios', 'tickets', 'invalidar', 'dashboard'];
   if (rol === 'Controlador') return ['validar', 'dashboard'];
   if (rol === 'Proveedor') return ['mistickets'];
-  if (rol === 'Corporativo') return ['dashboard', 'venta', 'validar', 'admin', 'usuarios', 'invalidar'];
+  if (rol === 'Corporativo') return ['dashboard', 'venta', 'validar', 'admin', 'usuarios', 'tickets', 'invalidar'];
   return [];
 }
 
-const NOMBRES_TAB = { venta: 'Vender', admin: 'Administración', usuarios: 'Usuarios', invalidar: 'Invalidar', validar: 'Validar', dashboard: 'Dashboard', mistickets: 'Mis tickets' };
+const NOMBRES_TAB = { venta: 'Vender', admin: 'Administración', usuarios: 'Usuarios', tickets: 'Tickets', invalidar: 'Invalidar', validar: 'Validar', dashboard: 'Dashboard', mistickets: 'Mis tickets' };
 
 function montarNavegacion() {
   const tabs = tabsParaRol(usuarioActual.rol);
@@ -517,12 +549,13 @@ function cambioComedorTrabajo() {
   if (tabActiva === 'validar') prepararTabValidar();
   if (tabActiva === 'admin') prepararTabAdmin();
   if (tabActiva === 'usuarios') prepararTabUsuarios();
+  if (tabActiva === 'tickets') prepararTabTickets();
   if (tabActiva === 'invalidar') prepararTabInvalidar();
 }
 
 function irATab(tab) {
   tabActiva = tab;
-  ['tabVenta','tabAdmin','tabUsuarios','tabInvalidar','tabValidar','tabDashboard','tabMisTickets'].forEach(id => document.getElementById(id).classList.add('oculto'));
+  ['tabVenta','tabAdmin','tabUsuarios','tabTickets','tabInvalidar','tabValidar','tabDashboard','tabMisTickets'].forEach(id => document.getElementById(id).classList.add('oculto'));
   document.querySelectorAll('[id^="navBtn_"]').forEach(b => b.classList.remove('activa'));
   const btn = document.getElementById('navBtn_' + tab);
   if (btn) btn.classList.add('activa');
@@ -530,6 +563,7 @@ function irATab(tab) {
   if (tab === 'venta') { document.getElementById('tabVenta').classList.remove('oculto'); prepararTabVenta(); }
   if (tab === 'admin') { document.getElementById('tabAdmin').classList.remove('oculto'); prepararTabAdmin(); }
   if (tab === 'usuarios') { document.getElementById('tabUsuarios').classList.remove('oculto'); prepararTabUsuarios(); }
+  if (tab === 'tickets') { document.getElementById('tabTickets').classList.remove('oculto'); prepararTabTickets(); }
   if (tab === 'invalidar') { document.getElementById('tabInvalidar').classList.remove('oculto'); prepararTabInvalidar(); }
   if (tab === 'validar') { document.getElementById('tabValidar').classList.remove('oculto'); prepararTabValidar(); }
   if (tab === 'dashboard') { document.getElementById('tabDashboard').classList.remove('oculto'); ajustarDashboardPorRol(); cargarDashboard(); }
@@ -554,7 +588,7 @@ async function cargarEmpresas() {
   try {
     const resp = await fetch(URL_BACKEND + '?action=empresas&comedor=' + encodeURIComponent(getComedorTrabajo()));
     const data = await resp.json();
-    empresas = data.slice(1).map(fila => ({ idProveedor: fila[0], nombre: fila[1] }));
+    empresas = data.slice(1).map(fila => ({ idProveedor: fila[0], nombre: fila[1], sinCargo: fila[6] === true, tipoQRDefault: fila[7] || 'multi' }));
     const lista = document.getElementById('listaEmpresas');
     lista.innerHTML = '';
     empresas.forEach(e => { const opt = document.createElement('option'); opt.value = e.nombre; lista.appendChild(opt); });
@@ -565,6 +599,16 @@ function seleccionarEmpresa() {
   const texto = document.getElementById('buscarEmpresa').value;
   const encontrada = empresas.find(e => e.nombre === texto);
   document.getElementById('idProveedorAuto').value = encontrada ? encontrada.idProveedor : '';
+  document.getElementById('avisoSinCargo').classList.toggle('oculto', !(encontrada && encontrada.sinCargo));
+  if (encontrada) {
+    document.getElementById('tipoQRSelect').value = encontrada.tipoQRDefault;
+    cambiarTipoQR();
+  }
+}
+
+function cambiarTipoQR() {
+  const esUnico = document.getElementById('tipoQRSelect').value === 'unico';
+  document.getElementById('labelCantidad').textContent = esUnico ? 'Usos permitidos por servicio, por día' : 'Cantidad de tickets';
 }
 
 async function cargarPrecioActual() {
@@ -586,11 +630,12 @@ async function generarTickets() {
   const vigenciaDesde = document.getElementById('vigenciaDesde').value;
   const vigenciaHasta = document.getElementById('vigenciaHasta').value;
   const serviciosPermitidos = Array.from(document.querySelectorAll('#tabVenta .servicios input:checked')).map(i => i.value);
+  const tipoQR = document.getElementById('tipoQRSelect').value;
 
   if (!idProveedor) { alert('Busca y selecciona la empresa de la lista antes de generar los tickets.'); return; }
   if (!cantidad || !vigenciaDesde || !vigenciaHasta || serviciosPermitidos.length === 0) { alert('Completa todos los campos.'); return; }
 
-  const payload = { idProveedor, nombreEmpresa, comedor, hotelCaja, cantidad, vigenciaDesde, vigenciaHasta, serviciosPermitidos, cajero };
+  const payload = { idProveedor, nombreEmpresa, comedor, hotelCaja, cantidad, vigenciaDesde, vigenciaHasta, serviciosPermitidos, cajero, tipoQR };
   try {
     const resp = await fetch(URL_BACKEND + '?action=generarTickets', { method: 'POST', body: JSON.stringify(payload) });
     const data = await resp.json();
@@ -603,7 +648,8 @@ async function generarTickets() {
 
 function mostrarVistaPreviaVenta() {
   const resultado = document.getElementById('resultadoVenta');
-  resultado.innerHTML = `<p><strong>${ticketsGenerados.length}</strong> tickets generados.</p>
+  const esUnico = ticketsGenerados.length === 1 && document.getElementById('tipoQRSelect').value === 'unico';
+  resultado.innerHTML = `<p><strong>${ticketsGenerados.length}</strong> ${esUnico ? 'código único generado (reutilizable según el límite diario configurado)' : 'tickets generados'}.</p>
     <button class="secundario" onclick="ejecutarConCarga(this, imprimir)">Imprimir (hoja carta, 12 por página)</button>
     <button class="secundario" onclick="ejecutarConCarga(this, enviarTicketsPorEmail)">Enviar por correo</button>
     <div id="resultadoEnvioEmail"></div>`;
@@ -633,6 +679,9 @@ function limpiarFormularioVenta() {
   document.getElementById('cantidad').value = 12;
   document.getElementById('vigenciaDesde').value = '';
   document.getElementById('vigenciaHasta').value = '';
+  document.getElementById('avisoSinCargo').classList.add('oculto');
+  document.getElementById('tipoQRSelect').value = 'multi';
+  cambiarTipoQR();
   document.querySelectorAll('#tabVenta .servicios input').forEach(i => i.checked = true);
 }
 
@@ -666,9 +715,11 @@ async function crearProveedor() {
   const contacto = document.getElementById('nuevoContacto').value.trim();
   const emailAlertas = document.getElementById('nuevoEmail').value.trim();
   const comedoresAutorizados = getComedorTrabajo();
+  const sinCargo = document.getElementById('nuevoSinCargo').checked;
+  const tipoQRDefault = document.getElementById('nuevoTipoQRDefault').value;
   if (!nombre) { alert('Escribe el nombre de la empresa.'); return; }
   try {
-    const resp = await fetch(URL_BACKEND + '?action=registrarEmpresa', { method: 'POST', body: JSON.stringify({ nombre, contacto, emailAlertas, comedoresAutorizados }) });
+    const resp = await fetch(URL_BACKEND + '?action=registrarEmpresa', { method: 'POST', body: JSON.stringify({ nombre, contacto, emailAlertas, comedoresAutorizados, sinCargo, tipoQRDefault }) });
     const data = await resp.json();
     if (data.success) {
       const aviso = document.getElementById('proveedorCreado');
@@ -677,6 +728,8 @@ async function crearProveedor() {
       cargarEmpresas();
       cargarListaProveedoresAdmin();
       ['nuevoNombreEmpresa','nuevoContacto','nuevoEmail'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('nuevoSinCargo').checked = false;
+      document.getElementById('nuevoTipoQRDefault').value = 'multi';
     }
   } catch (err) { alert('No se pudo crear el proveedor.'); console.error(err); }
 }
@@ -779,6 +832,30 @@ async function toggleEstadoUsuario(email, activar) {
     const data = await resp.json();
     if (data.success) cargarListaUsuariosAdmin();
   } catch (err) { alert('No se pudo cambiar el estado.'); console.error(err); }
+}
+
+// ---------- TAB TICKETS ----------
+
+let ticketsComedorCache = [];
+
+async function prepararTabTickets() {
+  try {
+    const resp = await fetch(URL_BACKEND + '?action=ticketsComedor&comedor=' + encodeURIComponent(getComedorTrabajo()));
+    ticketsComedorCache = await resp.json();
+    renderizarListaTickets();
+  } catch (err) { console.error('No se pudo cargar tickets del comedor', err); }
+}
+
+function renderizarListaTickets() {
+  const texto = (document.getElementById('buscarTickets').value || '').toLowerCase();
+  const filtrados = ticketsComedorCache.filter(t => t.empresa.toLowerCase().includes(texto) || t.codigo.toLowerCase().includes(texto));
+  document.getElementById('tablaTicketsComedor').innerHTML = filtrados.slice(0, 200).map(t => `
+    <tr>
+      <td>${t.codigo}</td><td>${t.empresa}</td>
+      <td>${t.tipoQR === 'unico' ? 'Único (' + t.limiteUsoDiario + '/día)' : 'Multi'}</td>
+      <td class="estado-${t.estado}">${t.estado}</td>
+      <td>${t.servicios}</td><td>${t.vigenciaHasta || '-'}</td>
+    </tr>`).join('') || '<tr><td colspan="6">Sin tickets todavía.</td></tr>';
 }
 
 // ---------- TAB INVALIDAR ----------
