@@ -171,8 +171,8 @@
         </div>
         <label>Tipo de QR</label>
         <select id="tipoQRSelect" onchange="cambiarTipoQR()">
+          <option value="unico" selected>Único código (reutilizable, con límite diario por servicio)</option>
           <option value="multi">Multicódigos (un QR por ticket)</option>
-          <option value="unico">Único código (reutilizable, con límite diario por servicio)</option>
         </select>
         <div class="fila">
           <div><label id="labelCantidad">Cantidad de tickets</label><input type="number" id="cantidad" min="1" value="12"></div>
@@ -200,38 +200,32 @@
         <h2 class="seccion">Crear nuevo proveedor</h2>
         <div class="fila">
           <div><label>Nombre de la empresa</label><input type="text" id="nuevoNombreEmpresa" placeholder="Ej. Transportes del Caribe"></div>
-          <div><label>Contacto</label><input type="text" id="nuevoContacto" placeholder="Nombre y teléfono"></div>
+          <div><label>Nombre del contacto</label><input type="text" id="nuevoContacto" placeholder="Nombre de la persona de contacto"></div>
         </div>
-        <label>Email para alertas y acceso al portal</label>
-        <input type="text" id="nuevoEmail" placeholder="correo@empresa.com">
+        <div class="fila">
+          <div><label>Teléfono del contacto</label><input type="text" id="nuevoTelefono" placeholder="809-000-0000"></div>
+          <div><label>Email para alertas y acceso al portal</label><input type="text" id="nuevoEmail" placeholder="correo@empresa.com"></div>
+        </div>
         <div class="fila">
           <div>
             <label>Tipo de QR por defecto</label>
             <select id="nuevoTipoQRDefault">
+              <option value="unico" selected>Único código</option>
               <option value="multi">Multicódigos</option>
-              <option value="unico">Único código</option>
             </select>
           </div>
-          <div style="display:flex;align-items:flex-end;padding-bottom:9px">
-            <label style="display:flex;align-items:center;gap:8px;font-weight:400;margin:0"><input type="checkbox" id="nuevoSinCargo" style="width:auto"> Sin cargo (no paga)</label>
-          </div>
+          <div><label>Precio por servicio (RD$)</label><input type="number" id="nuevoPrecio" value="300"></div>
         </div>
+        <label style="display:flex;align-items:center;gap:8px;font-weight:400;margin-top:12px"><input type="checkbox" id="nuevoSinCargo" style="width:auto"> Sin cargo (no paga)</label>
         <button class="secundario" onclick="ejecutarConCarga(this, crearProveedor)">Guardar proveedor</button>
         <p id="proveedorCreado" class="exito oculto"></p>
-      </div>
-      <div class="tarjeta">
-        <h2 class="seccion">Precio por servicio (RD$)</h2>
-        <div class="fila">
-          <div><input type="number" id="nuevoPrecioUnitario"></div>
-          <div><button class="secundario" onclick="ejecutarConCarga(this, actualizarPrecio)" style="margin-top:0">Actualizar precio</button></div>
-        </div>
       </div>
       <div class="tarjeta">
         <h2 class="seccion">Proveedores de este comedor</h2>
         <input type="text" id="buscarProveedorAdmin" placeholder="Buscar por nombre o código..." oninput="renderizarListaProveedores()">
         <div class="tabla-scroll">
           <table class="tickets">
-            <thead><tr><th>Código</th><th>Nombre</th><th>Contacto</th><th>Email</th><th>Password acceso</th><th>Estado</th><th></th></tr></thead>
+            <thead><tr><th>Código</th><th>Nombre</th><th>Contacto</th><th>Teléfono</th><th>Precio</th><th>Password acceso</th><th>Estado</th><th></th></tr></thead>
             <tbody id="tablaProveedoresAdmin"></tbody>
           </table>
         </div>
@@ -274,7 +268,7 @@
         <input type="text" id="buscarTickets" placeholder="Buscar por proveedor o código..." oninput="renderizarListaTickets()">
         <div class="tabla-scroll">
           <table class="tickets">
-            <thead><tr><th>Código</th><th>Empresa</th><th>Tipo</th><th>Estado</th><th>Servicios</th><th>Vigencia</th></tr></thead>
+            <thead><tr><th>Código</th><th>Empresa</th><th>Tipo</th><th>Estado</th><th>Servicios</th><th>Vigencia</th><th>Valor pagado</th><th>Valor disponible</th></tr></thead>
             <tbody id="tablaTicketsComedor"></tbody>
           </table>
         </div>
@@ -308,8 +302,15 @@
           <div><label>Comedor</label><input type="text" id="validarComedor" readonly></div>
           <div><label>Hotel</label><input type="text" id="validarHotel" readonly></div>
         </div>
-        <label>Servicio</label>
-        <select id="servicioActual"><option value="Desayuno">Desayuno</option><option value="Almuerzo">Almuerzo</option><option value="Cena">Cena</option></select>
+        <label>Servicio actual (automático por horario)</label>
+        <div id="indicadorServicio" style="padding:10px 14px;background:#f0f2f5;border-radius:6px;font-weight:600;text-align:center;margin-bottom:10px"></div>
+        <div id="confirmacionEscaneo" class="oculto" style="margin-top:10px">
+          <p style="margin:0 0 8px">Código detectado: <strong id="codigoDetectadoTexto"></strong></p>
+          <div style="display:flex;gap:10px">
+            <button onclick="ejecutarConCarga(this, confirmarEscaneo)">Confirmar y validar</button>
+            <button class="secundario" onclick="cancelarEscaneo()">Cancelar / escanear otro</button>
+          </div>
+        </div>
         <div id="lector" class="oculto"></div>
         <button id="btnIniciarCamara" onclick="iniciarCamara()">Iniciar cámara</button>
         <button id="btnDetenerCamara" class="detener oculto" onclick="detenerCamara()">Detener cámara</button>
@@ -382,7 +383,10 @@
     <!-- TAB: MIS TICKETS (Proveedor) -->
     <div id="tabMisTickets" class="oculto">
       <div class="tarjeta">
-        <h2 class="seccion">Mis tickets</h2>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h2 class="seccion" style="margin:0">Mis tickets</h2>
+          <button class="secundario chico" onclick="ejecutarConCarga(this, cargarMisTickets)">Actualizar</button>
+        </div>
         <div class="resumen-mistickets">
           <div><div class="num" id="resVigentes">0</div><div class="lbl">Vigentes</div></div>
           <div><div class="num" id="resUsados">0</div><div class="lbl">Usados</div></div>
@@ -580,15 +584,16 @@ function prepararTabVenta() {
   const comedor = getComedorTrabajo();
   document.getElementById('ventaComedor').value = comedor;
   document.getElementById('ventaHotel').value = textoHotelesComedor(comedor);
+  document.getElementById('precioUnitario').value = '-';
+  cambiarTipoQR();
   cargarEmpresas();
-  cargarPrecioActual();
 }
 
 async function cargarEmpresas() {
   try {
     const resp = await fetch(URL_BACKEND + '?action=empresas&comedor=' + encodeURIComponent(getComedorTrabajo()));
     const data = await resp.json();
-    empresas = data.slice(1).map(fila => ({ idProveedor: fila[0], nombre: fila[1], sinCargo: fila[6] === true, tipoQRDefault: fila[7] || 'multi' }));
+    empresas = data.slice(1).map(fila => ({ idProveedor: fila[0], nombre: fila[1], sinCargo: fila[6] === true, tipoQRDefault: fila[7] || 'unico', precio: Number(fila[9]) || 0 }));
     const lista = document.getElementById('listaEmpresas');
     lista.innerHTML = '';
     empresas.forEach(e => { const opt = document.createElement('option'); opt.value = e.nombre; lista.appendChild(opt); });
@@ -603,21 +608,15 @@ function seleccionarEmpresa() {
   if (encontrada) {
     document.getElementById('tipoQRSelect').value = encontrada.tipoQRDefault;
     cambiarTipoQR();
+    document.getElementById('precioUnitario').value = encontrada.sinCargo ? 'RD$ 0 (sin cargo)' : 'RD$ ' + encontrada.precio;
+  } else {
+    document.getElementById('precioUnitario').value = '-';
   }
 }
 
 function cambiarTipoQR() {
   const esUnico = document.getElementById('tipoQRSelect').value === 'unico';
   document.getElementById('labelCantidad').textContent = esUnico ? 'Usos permitidos por servicio, por día' : 'Cantidad de tickets';
-}
-
-async function cargarPrecioActual() {
-  try {
-    const resp = await fetch(URL_BACKEND + '?action=configuracion&comedor=' + encodeURIComponent(getComedorTrabajo()));
-    const data = await resp.json();
-    document.getElementById('precioUnitario').value = 'RD$ ' + data.precioUnitario;
-    document.getElementById('nuevoPrecioUnitario').value = data.precioUnitario;
-  } catch (err) { console.error('No se pudo cargar el precio', err); }
 }
 
 async function generarTickets() {
@@ -680,7 +679,8 @@ function limpiarFormularioVenta() {
   document.getElementById('vigenciaDesde').value = '';
   document.getElementById('vigenciaHasta').value = '';
   document.getElementById('avisoSinCargo').classList.add('oculto');
-  document.getElementById('tipoQRSelect').value = 'multi';
+  document.getElementById('precioUnitario').value = '-';
+  document.getElementById('tipoQRSelect').value = 'unico';
   cambiarTipoQR();
   document.querySelectorAll('#tabVenta .servicios input').forEach(i => i.checked = true);
 }
@@ -706,20 +706,21 @@ async function enviarTicketsPorEmail() {
 // ---------- TAB ADMIN ----------
 
 function prepararTabAdmin() {
-  cargarPrecioActual();
   cargarListaProveedoresAdmin();
 }
 
 async function crearProveedor() {
   const nombre = document.getElementById('nuevoNombreEmpresa').value.trim();
   const contacto = document.getElementById('nuevoContacto').value.trim();
+  const telefono = document.getElementById('nuevoTelefono').value.trim();
   const emailAlertas = document.getElementById('nuevoEmail').value.trim();
   const comedoresAutorizados = getComedorTrabajo();
   const sinCargo = document.getElementById('nuevoSinCargo').checked;
   const tipoQRDefault = document.getElementById('nuevoTipoQRDefault').value;
+  const precio = document.getElementById('nuevoPrecio').value;
   if (!nombre) { alert('Escribe el nombre de la empresa.'); return; }
   try {
-    const resp = await fetch(URL_BACKEND + '?action=registrarEmpresa', { method: 'POST', body: JSON.stringify({ nombre, contacto, emailAlertas, comedoresAutorizados, sinCargo, tipoQRDefault }) });
+    const resp = await fetch(URL_BACKEND + '?action=registrarEmpresa', { method: 'POST', body: JSON.stringify({ nombre, contacto, telefono, emailAlertas, comedoresAutorizados, sinCargo, tipoQRDefault, precio }) });
     const data = await resp.json();
     if (data.success) {
       const aviso = document.getElementById('proveedorCreado');
@@ -727,22 +728,12 @@ async function crearProveedor() {
       aviso.classList.remove('oculto');
       cargarEmpresas();
       cargarListaProveedoresAdmin();
-      ['nuevoNombreEmpresa','nuevoContacto','nuevoEmail'].forEach(id => document.getElementById(id).value = '');
+      ['nuevoNombreEmpresa','nuevoContacto','nuevoTelefono','nuevoEmail'].forEach(id => document.getElementById(id).value = '');
       document.getElementById('nuevoSinCargo').checked = false;
-      document.getElementById('nuevoTipoQRDefault').value = 'multi';
+      document.getElementById('nuevoTipoQRDefault').value = 'unico';
+      document.getElementById('nuevoPrecio').value = 300;
     }
   } catch (err) { alert('No se pudo crear el proveedor.'); console.error(err); }
-}
-
-async function actualizarPrecio() {
-  const nuevoPrecio = parseFloat(document.getElementById('nuevoPrecioUnitario').value);
-  if (!nuevoPrecio || nuevoPrecio <= 0) { alert('Escribe un precio válido.'); return; }
-  const comedor = getComedorTrabajo();
-  try {
-    const resp = await fetch(URL_BACKEND + '?action=actualizarPrecio', { method: 'POST', body: JSON.stringify({ comedor, nuevoPrecio }) });
-    const data = await resp.json();
-    if (data.success) { alert('Precio actualizado a RD$ ' + nuevoPrecio + ' para el comedor ' + comedor + '.'); cargarPrecioActual(); }
-  } catch (err) { alert('No se pudo actualizar el precio.'); console.error(err); }
 }
 
 let proveedoresAdminCache = [];
@@ -751,7 +742,7 @@ async function cargarListaProveedoresAdmin() {
   try {
     const resp = await fetch(URL_BACKEND + '?action=empresas&comedor=' + encodeURIComponent(getComedorTrabajo()) + '&incluirInactivos=true');
     const data = await resp.json();
-    proveedoresAdminCache = data.slice(1).map(f => ({ idProveedor: f[0], nombre: f[1], contacto: f[2], email: f[3], comedor: f[4], activo: f[5] }));
+    proveedoresAdminCache = data.slice(1).map(f => ({ idProveedor: f[0], nombre: f[1], contacto: f[2], email: f[3], comedor: f[4], activo: f[5], sinCargo: f[6] === true, telefono: f[8] || '', precio: Number(f[9]) || 0 }));
     renderizarListaProveedores();
   } catch (err) { console.error('No se pudo cargar proveedores', err); }
 }
@@ -761,11 +752,22 @@ function renderizarListaProveedores() {
   const filtrados = proveedoresAdminCache.filter(p => p.nombre.toLowerCase().includes(texto) || p.idProveedor.toLowerCase().includes(texto));
   document.getElementById('tablaProveedoresAdmin').innerHTML = filtrados.map(p => `
     <tr>
-      <td>${p.idProveedor}</td><td>${p.nombre}</td><td>${p.contacto || '-'}</td><td>${p.email || '-'}</td>
+      <td>${p.idProveedor}</td><td>${p.nombre}</td><td>${p.contacto || '-'}</td><td>${p.telefono || '-'}</td>
+      <td>${p.sinCargo ? 'Sin cargo' : 'RD$ <input type="number" value="' + p.precio + '" id="precioInput_' + p.idProveedor + '" style="width:70px;display:inline-block;padding:4px" onclick="event.stopPropagation()"> <button class="secundario chico" onclick="guardarPrecioProveedor(\\'' + p.idProveedor + '\\')">Guardar</button>'}</td>
       <td>—</td>
       <td>${p.activo === false ? '<span class="estado-invalidado">Inactivo</span>' : '<span class="estado-vigente">Activo</span>'}</td>
       <td><button class="secundario chico" onclick="toggleEstadoProveedor('${p.idProveedor}', ${p.activo === false})">${p.activo === false ? 'Activar' : 'Inactivar'}</button></td>
-    </tr>`).join('') || '<tr><td colspan="7">Sin proveedores todavía.</td></tr>';
+    </tr>`).join('') || '<tr><td colspan="8">Sin proveedores todavía.</td></tr>';
+}
+
+async function guardarPrecioProveedor(idProveedor) {
+  const nuevoPrecio = parseFloat(document.getElementById('precioInput_' + idProveedor).value);
+  if (!nuevoPrecio || nuevoPrecio <= 0) { alert('Escribe un precio válido.'); return; }
+  try {
+    const resp = await fetch(URL_BACKEND + '?action=actualizarPrecioProveedor', { method: 'POST', body: JSON.stringify({ idProveedor, nuevoPrecio }) });
+    const data = await resp.json();
+    if (data.success) { alert('Precio actualizado. Solo aplica a ventas nuevas, no afecta lo ya vendido.'); cargarListaProveedoresAdmin(); }
+  } catch (err) { alert('No se pudo actualizar el precio.'); console.error(err); }
 }
 
 async function toggleEstadoProveedor(idProveedor, activar) {
@@ -855,7 +857,8 @@ function renderizarListaTickets() {
       <td>${t.tipoQR === 'unico' ? 'Único (' + t.limiteUsoDiario + '/día)' : 'Multi'}</td>
       <td class="estado-${t.estado}">${t.estado}</td>
       <td>${t.servicios}</td><td>${t.vigenciaHasta || '-'}</td>
-    </tr>`).join('') || '<tr><td colspan="6">Sin tickets todavía.</td></tr>';
+      <td>RD$ ${t.valorPagado}</td><td>RD$ ${t.valorDisponible}</td>
+    </tr>`).join('') || '<tr><td colspan="8">Sin tickets todavía.</td></tr>';
 }
 
 // ---------- TAB INVALIDAR ----------
@@ -899,10 +902,41 @@ async function invalidarPorEmpresa() {
 
 // ---------- TAB VALIDAR ----------
 
+let codigoPendienteConfirmar = null;
+let intervaloServicio = null;
+
+function servicioActualLocal() {
+  const ahora = new Date();
+  const h = ahora.getHours() + ahora.getMinutes() / 60;
+  if (h >= 6 && h < 10) return 'Desayuno';
+  if (h >= 11 && h < 15) return 'Almuerzo';
+  if (h >= 17 && h < 21) return 'Cena';
+  return null;
+}
+
+function actualizarIndicadorServicio() {
+  const servicio = servicioActualLocal();
+  const div = document.getElementById('indicadorServicio');
+  const btnCamara = document.getElementById('btnIniciarCamara');
+  if (!div) return;
+  if (servicio) {
+    div.textContent = servicio;
+    div.style.color = '#0f6e56';
+    if (btnCamara) btnCamara.disabled = false;
+  } else {
+    div.textContent = 'Fuera de horario de servicio (Desayuno 6-10am, Almuerzo 11am-3pm, Cena 5-9pm)';
+    div.style.color = '#a32d2d';
+    if (btnCamara) btnCamara.disabled = true;
+  }
+}
+
 function prepararTabValidar() {
   const comedor = getComedorTrabajo();
   document.getElementById('validarComedor').value = comedor;
   document.getElementById('validarHotel').value = textoHotelesComedor(comedor);
+  actualizarIndicadorServicio();
+  if (intervaloServicio) clearInterval(intervaloServicio);
+  intervaloServicio = setInterval(actualizarIndicadorServicio, 30000);
 }
 
 function iniciarCamara() {
@@ -910,7 +944,7 @@ function iniciarCamara() {
   document.getElementById('btnIniciarCamara').classList.add('oculto');
   document.getElementById('btnDetenerCamara').classList.remove('oculto');
   lector = new Html5Qrcode('lector');
-  lector.start({ facingMode: 'environment' }, { fps: 10, qrbox: 220 }, onEscaneoExitoso)
+  lector.start({ facingMode: 'environment' }, { fps: 10, qrbox: 220 }, onEscaneoDetectado)
     .catch(err => { document.getElementById('resultadoValidacion').innerHTML = `<div class="error">No se pudo abrir la cámara: ${err}</div>`; });
 }
 
@@ -919,32 +953,51 @@ function detenerCamara() {
   document.getElementById('lector').classList.add('oculto');
   document.getElementById('btnIniciarCamara').classList.remove('oculto');
   document.getElementById('btnDetenerCamara').classList.add('oculto');
+  document.getElementById('confirmacionEscaneo').classList.add('oculto');
+  codigoPendienteConfirmar = null;
 }
 
-async function onEscaneoExitoso(codigoDecodificado) {
-  if (bloqueado) return;
-  bloqueado = true;
+// El escaneo detecta el código pero NO valida automático - el controlador debe confirmar manualmente.
+function onEscaneoDetectado(codigoDecodificado) {
+  if (codigoPendienteConfirmar) return;
+  codigoPendienteConfirmar = codigoDecodificado.trim();
+  if (lector) lector.pause(true);
+  document.getElementById('codigoDetectadoTexto').textContent = codigoPendienteConfirmar;
+  document.getElementById('confirmacionEscaneo').classList.remove('oculto');
+}
+
+function cancelarEscaneo() {
+  codigoPendienteConfirmar = null;
+  document.getElementById('confirmacionEscaneo').classList.add('oculto');
+  if (lector) lector.resume();
+}
+
+async function confirmarEscaneo() {
+  if (!codigoPendienteConfirmar) return;
+  const codigo = codigoPendienteConfirmar;
   const payload = {
-    codigo: codigoDecodificado.trim(),
+    codigo: codigo,
     comedor: getComedorTrabajo(),
     hotel: textoHotelesComedor(getComedorTrabajo()),
-    servicio: document.getElementById('servicioActual').value,
+    servicio: servicioActualLocal(),
     controlador: usuarioActual.nombre
   };
   try {
     const resp = await fetch(URL_BACKEND + '?action=validarTicket', { method: 'POST', body: JSON.stringify(payload) });
     const data = await resp.json();
-    mostrarResultadoValidacion(payload.codigo, data);
+    mostrarResultadoValidacion(codigo, data);
   } catch (err) {
-    mostrarResultadoValidacion(payload.codigo, { resultado: 'rechazado', motivo: 'Sin conexión con el backend' });
+    mostrarResultadoValidacion(codigo, { resultado: 'rechazado', motivo: 'Sin conexión con el backend' });
   }
-  setTimeout(() => { bloqueado = false; }, 2500);
+  codigoPendienteConfirmar = null;
+  document.getElementById('confirmacionEscaneo').classList.add('oculto');
+  if (lector) lector.resume();
 }
 
 function mostrarResultadoValidacion(codigo, data) {
   const div = document.getElementById('resultadoValidacion');
   let clase = 'rechazado', titulo = 'Rechazado', detalle = data.motivo || '';
-  if (data.resultado === 'aprobado') { clase = 'aprobado'; titulo = 'Aprobado'; detalle = 'Empresa: ' + (data.empresa || '-'); }
+  if (data.resultado === 'aprobado') { clase = 'aprobado'; titulo = 'Aprobado'; detalle = (data.servicio ? data.servicio + ' · ' : '') + 'Empresa: ' + (data.empresa || '-') + (data.usos ? ' · Uso ' + data.usos : ''); }
   else if (data.alerta) { clase = 'duplicado'; titulo = 'Ya utilizado - alerta enviada'; }
   div.innerHTML = `<div class="resultado-grande ${clase}"><p class="titulo">${titulo}</p><p class="detalle">${codigo}${detalle ? ' · ' + detalle : ''}</p></div>`;
   historialScans.unshift(`${new Date().toLocaleTimeString()} · ${codigo} · ${titulo}`);
