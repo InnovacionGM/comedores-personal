@@ -753,7 +753,7 @@ function renderizarListaProveedores() {
   document.getElementById('tablaProveedoresAdmin').innerHTML = filtrados.map(p => `
     <tr>
       <td>${p.idProveedor}</td><td>${p.nombre}</td><td>${p.contacto || '-'}</td><td>${p.telefono || '-'}</td>
-      <td>${p.sinCargo ? 'Sin cargo' : 'RD$ <input type="number" value="' + p.precio + '" id="precioInput_' + p.idProveedor + '" style="width:70px;display:inline-block;padding:4px" onclick="event.stopPropagation()"> <button class="secundario chico" onclick="guardarPrecioProveedor(\\'' + p.idProveedor + '\\')">Guardar</button>'}</td>
+      <td>${p.sinCargo ? 'Sin cargo' : 'RD$ <input type="number" value="' + p.precio + '" id="precioInput_' + p.idProveedor + '" style="width:70px;display:inline-block;padding:4px" onclick="event.stopPropagation()"> <button class="secundario chico" onclick="guardarPrecioProveedor(\'' + p.idProveedor + '\')">Guardar</button>'}</td>
       <td>—</td>
       <td>${p.activo === false ? '<span class="estado-invalidado">Inactivo</span>' : '<span class="estado-vigente">Activo</span>'}</td>
       <td><button class="secundario chico" onclick="toggleEstadoProveedor('${p.idProveedor}', ${p.activo === false})">${p.activo === false ? 'Activar' : 'Inactivar'}</button></td>
